@@ -1,0 +1,45 @@
+rules:
+  - id: java-unsanitized-user-input
+    languages: [java]
+    message: |
+      Potential XSS vulnerability: Untrusted user input is being output without proper sanitization.
+      Use proper sanitization (e.g., `Encode.forHtml()`) to prevent cross-site scripting (XSS).
+    severity: WARNING
+    mode: taint
+    pattern-sources:
+      - pattern: "$UNTRUSTED_INPUT = $REQUEST.getParameter(...);"
+    pattern-sinks:
+      - pattern: "$RESPONSE.getWriter().print($UNTRUSTED_INPUT);"
+      - pattern: "$RESPONSE.getWriter().println($UNTRUSTED_INPUT);"
+    pattern-sanitizers:
+      - pattern: "Encode.forHtml($UNTRUSTED_INPUT);"
+
+  - id: java-sql-injection-check
+    languages: [java]
+    message: |
+      Potential SQL Injection vulnerability: Avoid directly using untrusted input in database queries.
+      Use parameterized queries or prepared statements to prevent SQL Injection.
+    severity: ERROR
+    mode: taint
+    pattern-sources:
+      - pattern: "$UNTRUSTED_INPUT = $REQUEST.getParameter(...);"
+    pattern-sinks:
+      - pattern: "$STATEMENT.executeQuery($UNTRUSTED_INPUT);"
+      - pattern: "$STATEMENT.executeUpdate($UNTRUSTED_INPUT);"
+    pattern-sanitizers:
+      - pattern: "$PREPARED_STATEMENT.setString(..., $UNTRUSTED_INPUT);"
+      - pattern: "isValidUsername($UNTRUSTED_INPUT);"
+
+  - id: java-unsanitized-error-message
+    languages: [java]
+    message: |
+      Potential Information Leakage vulnerability: Avoid displaying untrusted user input in error messages without sanitization.
+      Use proper sanitization (e.g., `Encode.forHtml()`) to prevent exposing sensitive information.
+    severity: WARNING
+    mode: taint
+    pattern-sources:
+      - pattern: "$UNTRUSTED_INPUT = $REQUEST.getParameter(...);"
+    pattern-sinks:
+      - pattern: "showError($RESPONSE, $UNTRUSTED_INPUT);"
+    pattern-sanitizers:
+      - pattern: "Encode.forHtml($UNTRUSTED_INPUT);"
